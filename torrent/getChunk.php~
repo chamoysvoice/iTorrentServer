@@ -1,0 +1,30 @@
+<?php
+require_once("../library/session.php");
+require_once("../global.php");
+
+
+if($_GET){
+header('Content-type: application/json');
+  if($_GET["echo"]){
+  echo json_encode(searchChunk($_GET["id"], $_GET["chunk"]));
+  } else {
+		$ids = 	array();	
+
+		foreach ($GLOBALS['servers'] as $id => $server) {
+			$ids = array();
+				$ids = searchChunk($_GET["id"], $_GET["chunk"]);		
+				if($server == "http://".$_SERVER['SERVER_ADDR']."/") continue; // ask everyone but 
+				$ids[] = json_decode(file_get_contents($server."torrent/getChunk.php?id=".$_GET["id"]."&chunk=".$_GET["chunk"])."&echo=1"));  
+				    
+		}
+		$ip = array();
+		foreach ($ids as $ip_dir){
+			foreach($ip_dir as $i){
+				$ip[] = $i;
+			}		
+		}
+		echo json_encode(array_unique($ip));
+	}
+}
+
+?>

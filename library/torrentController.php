@@ -1,0 +1,56 @@
+<?php
+  require_once("database.php");
+
+  function getLastTorrent(){
+    $database = new Database();
+    $r        = $database->execute("SELECT id FROM torrent ORDER BY id desc LIMIT 1");
+    $database->close();
+    return mysql_fetch_assoc($r);
+  }
+
+  function getTorrent($id){
+    $database = new Database();
+    $r        = $database->execute("SELECT * FROM torrent WHERE id = '$id'");
+    $database->close();
+    $torrent  = mysql_fetch_assoc($r);
+    return $torrent;
+  }
+
+  function createTorrent($data){
+    $database = new Database();
+    $name     = $data['name'];
+    $id       = $data['id'];
+    $size     = $data['size'];
+    $query = "INSERT INTO torrent (id, name, size) VALUES ('$id', '$name', '$size')";
+    $database->execute("INSERT INTO torrent (id, name, size) VALUES ('$id', '$name', '$size')");
+
+    $database->close();
+  }
+
+  function getLastId($echo){
+    $torrent = array();
+    $i = 0;
+    if($echo == 0){ // this will be executed by the main server
+      $torrent = getLastTorrent();
+      $i       = $torrent["id"];
+
+      foreach ($GLOBALS['servers'] as $id => $server) {
+        if($server == "http://".$_SERVER['SERVER_ADDR']."/") continue; // ask everyone but me
+
+        $response = file_get_contents($server."torrent/get_last_id.php?echo=1");
+        if($response != false){
+          if($i < $response){
+            $i = $response;
+          }
+        }
+      }
+      return $i;
+    } else { // This will be executed by the ECHOED servers
+      $torrent = getLastTorrent();
+      $i       = $torrent["id"];
+      echo $i;
+    }
+  }
+
+
+?>
